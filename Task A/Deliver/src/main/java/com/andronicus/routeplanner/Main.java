@@ -7,53 +7,67 @@ public class Main {
 
         Scanner sc = new Scanner(System.in);
 
-        System.out.print("Enter number of delivery points: ");
-        int n = sc.nextInt();
-
         List<DeliveryPoint> points = new ArrayList<>();
 
-        for (int i = 0; i < n; i++) {
-            System.out.println("\nEnter details for point " + (i + 1));
+        // ------------------------------
+        // SAMPLE INPUT OPTION
+        // ------------------------------
+        System.out.print("Use sample data? (y/n): ");
+        String useSample = sc.next();
 
-            System.out.print("x: ");
-            int x = sc.nextInt();
+        if (useSample.equalsIgnoreCase("y")) {
 
-            System.out.print("y: ");
-            int y = sc.nextInt();
+            points.add(new DeliveryPoint(0, 0, "high"));
+            points.add(new DeliveryPoint(2, 3, "medium"));
+            points.add(new DeliveryPoint(5, 1, "high"));
+            points.add(new DeliveryPoint(6, 4, "low"));
+            points.add(new DeliveryPoint(1, 2, "medium"));
 
-            System.out.print("priority (high/medium/low): ");
-            String priority = sc.next();
+            System.out.println("\nUsing sample data:");
+            points.forEach(System.out::println);
 
-            points.add(new DeliveryPoint(x, y, priority));
-        }
+        } else {
 
-        // Sort by priority
-        List<DeliveryPoint> sorted = PrioritySorter.sortByPriority(points);
+            // ------------------------------
+            // MANUAL USER INPUT
+            // ------------------------------
+            System.out.print("Enter number of delivery points: ");
+            int n = sc.nextInt();
 
-        List<DeliveryPoint> high = new ArrayList<>();
-        List<DeliveryPoint> med = new ArrayList<>();
-        List<DeliveryPoint> low = new ArrayList<>();
+            for (int i = 0; i < n; i++) {
+                System.out.println("\nEnter details for point " + (i + 1));
 
-        for (DeliveryPoint p : sorted) {
-            switch (p.priority.toLowerCase()) {
-                case "high" -> high.add(p);
-                case "medium" -> med.add(p);
-                case "low" -> low.add(p);
-                default -> System.out.println("Invalid priority: " + p.priority);
+                System.out.print("x: ");
+                int x = sc.nextInt();
+
+                System.out.print("y: ");
+                int y = sc.nextInt();
+
+                System.out.print("priority (high/medium/low): ");
+                String priority = sc.next();
+
+                points.add(new DeliveryPoint(x, y, priority));
             }
         }
 
-        List<DeliveryPoint> finalRoute = new ArrayList<>();
-        if (!high.isEmpty()) finalRoute.addAll(NearestNeighbor.route(high));
-        if (!med.isEmpty())  finalRoute.addAll(NearestNeighbor.route(med));
-        if (!low.isEmpty())  finalRoute.addAll(NearestNeighbor.route(low));
+        // ------------------------------
+        // OPTIMAL PRIORITY TSP
+        // ------------------------------
+        OptimalPriorityTSP solver = new OptimalPriorityTSP(points);
+        List<DeliveryPoint> finalRoute = solver.solve();
 
-        System.out.println("\nOptimized Route:");
+        // ------------------------------
+        // DISPLAY ROUTE
+        // ------------------------------
+        System.out.println("\nOptimized Route (Optimal DP TSP):");
         finalRoute.forEach(System.out::println);
 
+        // ------------------------------
+        // CALCULATE DISTANCE
+        // ------------------------------
         double total = 0;
         for (int i = 0; i < finalRoute.size() - 1; i++) {
-            total += DistanceUtils.distance(finalRoute.get(i), finalRoute.get(i+1));
+            total += DistanceUtils.distance(finalRoute.get(i), finalRoute.get(i + 1));
         }
 
         System.out.printf("\nTotal Distance: %.2f units\n", total);
