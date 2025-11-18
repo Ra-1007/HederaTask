@@ -1,0 +1,31 @@
+{
+  "name": "hedera-messaging-service",
+  "version": "1.0.0",
+  "description": "A messaging service built on Hedera Consensus Service with encryption and filtering",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "test": "node main.js"
+  },
+  "keywords": [
+    "hedera",
+    "hcs",
+    "blockchain",
+    "messaging",
+    "consensus",
+    "encryption"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "@hashgraph/sdk": "^2.77.0",
+    "dotenv": "^16.6.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/hedera-messaging-service.git"
+  }
+}
