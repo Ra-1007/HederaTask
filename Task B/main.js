@@ -1,18 +1,20 @@
-// Simple Hedera HCS Messaging Demo (Encrypted)
-// --------------------------------------------
+// Simple Hedera HCS Messaging Demo (Custom Messages + Verification)
 
 const {
   Client,
   PrivateKey,
-  AccountId,
   TopicCreateTransaction,
   TopicMessageSubmitTransaction,
   TopicMessageQuery
 } = require("@hashgraph/sdk");
+
 const crypto = require("crypto");
+const readline = require("readline-sync");
 require("dotenv").config();
 
-// AES-256 encryption helpers
+// -----------------------------
+// AES-256 Encryption
+// -----------------------------
 function getKey() {
   return crypto.createHash("sha256")
                .update(process.env.ENCRYPTION_SECRET)
@@ -33,69 +35,70 @@ function decrypt(data) {
     const encrypted = Buffer.from(encHex, "hex");
 
     const decipher = crypto.createDecipheriv("aes-256-cbc", getKey(), iv);
-    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
-    return decrypted.toString();
+    return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString();
   } catch {
-    return data; // Not encrypted or wrong format
+    return data;
   }
 }
 
 async function main() {
   // Connect to Hedera Testnet
-  const client = Client.forTestnet()
-    .setOperator(process.env.OPERATOR_ID, PrivateKey.fromString(process.env.OPERATOR_KEY));
+  const client = Client.forTestnet();
+  client.setOperator(process.env.OPERATOR_ID, PrivateKey.fromString(process.env.OPERATOR_KEY));
 
-  console.log("Connected as:", process.env.OPERATOR_ID);
+  console.log("Connected to Hedera as:", process.env.OPERATOR_ID);
 
-  // 1️⃣ Create Topic
+  // Create Topic
   const tx = await new TopicCreateTransaction().execute(client);
   const receipt = await tx.getReceipt(client);
   const topicId = receipt.topicId;
-
   console.log("\n📌 Topic Created:", topicId.toString());
 
-  // 2️⃣ Send encrypted messages
-  const messages = [
-    "Hello, Hedera!",
-    "Learning HCS",
-    "Message 3"
-  ];
+  // Ask user for custom messages
+  console.log("\nType messages to send. Type 'exit' to stop.\n");
 
-  console.log("\n📤 Sending encrypted messages...");
+  while (true) {
+    const msg = readline.question("Your message: ");
 
-  for (let msg of messages) {
-    const encryptedMsg = encrypt(msg);
+    if (msg.toLowerCase() === "exit") break;
+
+    const encrypted = encrypt(msg);
+
     await new TopicMessageSubmitTransaction({
       topicId,
-      message: encryptedMsg
+      message: encrypted
     }).execute(client);
 
-    console.log(`   Sent: "${msg}" 🔐`);
+    console.log(`   📤 Sent encrypted: "${msg}"`);
   }
 
-  // Wait a few seconds so mirror node catches up
+  // Wait for consensus in mirror node
   console.log("\n⏳ Waiting for consensus...");
-  await new Promise(r => setTimeout(r, 5000));
+  await new Promise(r => setTimeout(r, 4000));
 
-  // 3️⃣ Retrieve + Decrypt messages
-  console.log("\n📥 Retrieving + decrypting messages:\n");
+  // Retrieve messages
+  console.log("\n📥 Retrieving + decrypting messages:");
+  console.log("-----------------------------------------\n");
 
-  await new Promise((resolve) => {
+  await new Promise(resolve => {
     new TopicMessageQuery()
       .setTopicId(topicId)
-      .setStartTime(0) // read all messages
+      .setStartTime(0)
       .subscribe(client, null, (msg) => {
         const raw = msg.contents.toString();
         const decrypted = decrypt(raw);
-        const timestamp = msg.consensusTimestamp.toDate().toISOString();
 
-        console.log(` • "${decrypted}" at ${timestamp}`);
+        console.log(`Message #${msg.sequenceNumber}`);
+        console.log(`   Content: "${decrypted}"`);
+        console.log(`   Raw Encrypted: ${raw}`);
+        console.log(`   Timestamp: ${msg.consensusTimestamp.toDate().toISOString()}`);
+        console.log("-----------------------------------------");
       });
 
     setTimeout(resolve, 6000);
   });
 
-  console.log("\n✔️ Finished.");
+  console.log("\n✔️ Done.");
 }
 
 main();
