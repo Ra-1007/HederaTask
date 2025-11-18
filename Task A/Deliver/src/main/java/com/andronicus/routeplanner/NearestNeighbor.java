@@ -15,13 +15,20 @@ public class NearestNeighbor {
         List<DeliveryPoint> unvisited = new ArrayList<>(points.subList(1, points.size()));
 
         while (!unvisited.isEmpty()) {
-            DeliveryPoint next = Collections.min(unvisited,
-                    Comparator.comparingDouble(p -> DistanceUtils.distance(current, p)));
+
+            // Make a final reference for lambda
+            final DeliveryPoint currentFinal = current;
+
+            DeliveryPoint next = Collections.min(
+                    unvisited,
+                    Comparator.comparingDouble(p -> DistanceUtils.distance(currentFinal, p))
+            );
 
             route.add(next);
             unvisited.remove(next);
             current = next;
         }
+
         return route;
     }
 }
